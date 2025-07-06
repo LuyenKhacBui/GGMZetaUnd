@@ -1,0 +1,6 @@
+.vscode
+sample_data/*.gfc
+sample_data/EGM2008_to2190_TideFree
+sample_data/Zeta-to-N_to2160_egm2008
+README_Template_1.md
+README_template_2.md
