@@ -37,23 +37,23 @@ To call the script in the sequential (serial) mode, use the following example co
 
 🪟 On Windows using PowerShell or Command Prompt.
 ```bash
-python.exe GGMZetaUnd.py -ggm sample_data\eigen-6c4.gfc -i sample_data\LatLon.txt -o sample_data\ZetaUnd.xlsx -c sample_data\config.cfg
+python.exe GGMZetaUnd.py -g sample_data\eigen-6c4.gfc -i sample_data\LatLon.txt -o sample_data\ZetaUnd.xlsx -c sample_data\config.cfg
 ```
 
 🐧 On Linux using the terminal:
 ```bash
-python GGMZetaUnd.py --ggm sample_data/eigen-6c4.gfc --i sample_data/LatLon.txt --o sample_data/ZetaUnd.xlsx --cfg sample_data/config.cfg
+python GGMZetaUnd.py -g sample_data/eigen-6c4.gfc -i sample_data/LatLon.txt -o sample_data/ZetaUnd.xlsx -c sample_data/config.cfg
 ```
 To call the script in the parallel (multiprocessing) mode, use the following example command:
 
 🪟 On Windows using PowerShell or Command Prompt.
 ```bash
-python.exe GGMZetaUnd.py -ggm sample_data\eigen-6c4.gfc -i sample_data\LatLon.txt -o sample_data\ZetaUnd.xlsx -c sample_data\config.cfg -n 4
+python.exe GGMZetaUnd.py -g sample_data\eigen-6c4.gfc -i sample_data\LatLon.txt -o sample_data\ZetaUnd.xlsx -c sample_data\config.cfg -n 4
 ```
 
 🐧 On Linux using the terminal:
 ```bash
-python GGMZetaUnd.py --ggm sample_data/eigen-6c4.gfc --i sample_data/LatLon.txt --o sample_data/ZetaUnd.xlsx --cfg sample_data/config.cfg -n 4
+python GGMZetaUnd.py -g sample_data/eigen-6c4.gfc -i sample_data/LatLon.txt -o sample_data/ZetaUnd.xlsx -c sample_data/config.cfg -n 4
 ```
 
 ## Author
