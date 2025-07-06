@@ -2,13 +2,13 @@
 import argparse, configparser, os, time, sys, datetime
 import numpy as np
 import pandas as pd # sudo apt install python3-pandas
-import inspect, ahrs # pip install ahrs
+import inspect, ahrs # pip install ahrs or pip3 install ahrs --break-system-packages in Linux
 import multiprocessing as mp
 from typing import Optional
 def cmdLineParse():
 	parser = argparse.ArgumentParser(description='Estimate height anomalies (ZETA)/geoid undulations (UND) from EGM harmonic coefficients.')	
-	parser.add_argument('-ggm', '--ggm'   , type=str, required=True , dest='ggm' , help='Path to EGM/GGM file.')	
-	parser.add_argument('-z2n', '--z2n'   , type=str, required=False, dest='z2n' , help='Path to Zeta-to-N file.', default=None)
+	parser.add_argument('-g', '--ggm'   , type=str, required=True , dest='ggm' , help='Path to EGM/GGM file.')	
+	parser.add_argument('-z', '--z2n'   , type=str, required=False, dest='z2n' , help='Path to Zeta-to-N file.', default=None)
 	parser.add_argument('-i'  , '--i'     , type=str, required=True , dest='ifl' , help='Path to input file of latitude/longitude in degrees. Format: txt.')
 	parser.add_argument('-o'  , '--o'     , type=str, required=True , dest='ofl' , help='Path to output file of latitude/longitude in degrees and zeta/und in meters. Format: xlsx.')
 	parser.add_argument('-c'  , '--cfg'   , type=str, required=True , dest='cfl' , help='Path to config file. Format: .cfg')
@@ -116,7 +116,7 @@ class DATA:
 		pd.DataFrame(data).to_excel(writer, sheet_name=datasheetname, header=dataheader, index=dataindex); writer.close()
 
 class GEOID:
-	def __init__(self, aELL: float=np.nan, fELL: float=np.nan, aGGM: float=np.nan, GMGGM: float=np.nan): # Constructor: Initialise.
+	def __init__(self, aELL: float=np.nan, fELL: float=np.nan, omgELL: float=np.nan, GMELL: float=np.nan, geELL: float=np.nan, gpELL: float=np.nan, aGGM: float=np.nan, GMGGM: float=np.nan): # Constructor: Initialise.
 		"""
 		Parameters:			
 		returns:
@@ -125,7 +125,8 @@ class GEOID:
 			[2] NIMA WGS1984 http://geodesy.unr.edu/hanspeterplag/library/geodesy/wgs84fin.pdf
 			[3] Moritz, H. (2000). Geodetic reference system 1980. Journal of geodesy, 74(1), 128-133.
 		"""
-		self.aELL = aELL; self.fELL = fELL; self.aGGM = aGGM; self.GMGGM = GMGGM
+		self.aELL = aELL; self.fELL = fELL; self.omgELL = omgELL; self.GMELL = GMELL; self.geELL = geELL; self.gpELL = gpELL; self.aGGM = aGGM; self.GMGGM = GMGGM
+		self.bELL = aELL*(1-fELL)
 	def ZetaUndHarCoef_starmap2Async      (self, geoLatLonEHgt=np.array([]), HarCoef: dict={}, HarCoefZeta2N: dict={}, maxdeg: Optional[int]=None, ZeroDegZeta: float=0.0, output: str='UND', verbose: bool=False, verbosetab: str='', verboseprct: int=1, nprocs=mp.cpu_count()): # Call ZetaUndHarCoef with multiprocessing starmap2Async
 		""" inputs & output are the same as those in ZetaUndHarCoef """
 		if verbose: print(verbosetab + 'Number of CPUs used: ' + str(nprocs))
@@ -140,7 +141,7 @@ class GEOID:
 		ZetaUnd  = np.array([item for sublist in Outputs for item in sublist[0]])
 		CountPnm =      sum([item[1] for item in Outputs])
 		return ZetaUnd, CountPnm # ndarray (N, )
-	def ZetaUndHarCoef                    (self, geoLatLonEHgt=np.array([]), HarCoef: dict={}, HarCoefZeta2N: dict={}, maxdeg: int=None, ZeroDegZeta: float=0.0, output: str='UND', verbose: bool=False, verbosetab: str='', verboseprct: int=1, worker: int=1):
+	def ZetaUndHarCoef                    (self, geoLatLonEHgt=np.array([]), HarCoef: dict={}, HarCoefZeta2N: dict={}, maxdeg: Optional[int]=None, ZeroDegZeta: float=0.0, output: str='UND', verbose: bool=False, verbosetab: str='', verboseprct: int=1, worker: int=1):
 		"""Compute height anomaly (a.k.a quasigeoid height) or geoid undulation (a.k.a geoidal height) from the fully-normalized spherical harmonic coefficients
 		Args:
 			geoLatLonEHgt (ndarray): Array (N, 3) of geodetic Latitude/Longitude/Ellipsoidal Height. Lat/Lon in degrees, Ellipsoidal Heights in meters.
@@ -223,31 +224,30 @@ class GEOID:
 			References:
 				[1] NGA.STND.0036_1.0.0_WGS84 https://nsgreg.nga.mil/doc/view?i=4085 => https://kubic-nsg-standards-nsgreg-nsgreg-files-6lxvt.s3.us-east-1.amazonaws.com/doc/Document/NGA%20STND%200036_1%200%200_WGS84.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVXR7TTKDXD6K4UH6%2F20241206%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241206T132450Z&X-Amz-Expires=900&X-Amz-SignedHeaders=host&response-cache-control=900&response-content-disposition=inline&response-content-type=application%2Fpdf&X-Amz-Signature=958f710b6496485b08854d00e8703fd6d6a5f7a67c3790f7a2d4957a107719b4
 				[2] NIMA WGS1984 http://geodesy.unr.edu/hanspeterplag/library/geodesy/wgs84fin.pdf
-				[3] AHRS library: https://ahrs.readthedocs.io/en/latest/wgs84.html#
+				[3] AHRS library: 	.html
 				[4] Moritz, H. (2000). Geodetic reference system 1980. Journal of geodesy, 74(1), 128-133.
 		"""
 		if (not higheHgt or eHgt == 0) and method.lower() == 'ahrs': gamma_h = ahrs.utils.WGS().normal_gravity(lat=geodlatdeg, h=eHgt) # use the AHRS library. see [3].
 		else: # compute with equations instead of using the AHRS library. See [1], [2]
 			latrad = np.radians(geodlatdeg) # to radians			
 			if eHgt == 0 or (eHgt != 0 and not higheHgt): # on the Ellipsoid or Above/Below the ellipsoid with low ellipsoidal height: use the equation of low ellipsoidal height/altitude
-				if self.ellipsoid.upper() == 'WGS84':
-					gamma_e = 9.7803253359  # Gravity on the ellipsoid WGS84 at the equator (m/s^2), in [1], [2] Tab. 3.6, p. 3-10.
-					gamma_p = 9.8321849379  # Gravity on the ellipsoid WGS84 at the pole    (m/s^2), in [1], [2] Tab. 3.6, p. 3-10.
+				# gamma_e = 9.7803253359  # Gravity on the ellipsoid WGS84 at the equator (m/s^2), in [1], [2] Tab. 3.6, p. 3-10.
+				# gamma_p = 9.8321849379  # Gravity on the ellipsoid WGS84 at the pole    (m/s^2), in [1], [2] Tab. 3.6, p. 3-10.
 				# Compute normal gravity on the ellipsoid (i.e., eHgt = 0) first
-				gamma_h = (self.a*gamma_e*np.cos(latrad)**2 + self.b*gamma_p*np.sin(latrad)**2)/np.sqrt(self.a**2*np.cos(latrad)**2 + self.b**2*np.sin(latrad)**2) # (1): m/s2; see the Eq in [3].
-				if eHgt != 0: m = self.omega**2 * self.a**2 * self.b / self.GM; gamma_h *= (1 - 2/self.a*(1+self.f+m-2*self.f*np.sin(latrad)**2)*eHgt + 3/self.a**2*eHgt**2) # see [1] Eq.(4-3), p.4-3; [2] Eq.(4-3), p.4-2; [3]
+				gamma_h = (self.aELL*self.geELL*np.cos(latrad)**2 + self.bELL*self.gpELL*np.sin(latrad)**2)/np.sqrt(self.aELL**2*np.cos(latrad)**2 + self.bELL**2*np.sin(latrad)**2) # (1): m/s2; see Eq [Somigliana1929] in [3] and Eq (4-1) in [1].
+				if eHgt != 0: m = self.omgELL**2 * self.aELL**2 * self.bELL / self.GMELL; gamma_h *= (1 - 2/self.aELL*(1+self.fELL+m-2*self.fELL*np.sin(latrad)**2)*eHgt + 3/self.aELL**2*eHgt**2) # see [1] Eq.(4-3), p.4-3; [2] Eq.(4-3), p.4-2; [3]
 			elif eHgt != 0 and higheHgt: # Above/Below the ellipsoid with high ellipsoidal height: use the equation of high ellipsoidal height/altitude
 				# Below use Eqs (4-4) to (4-15) in [1] (p. 4-3 to 4-5), [2]
-				XYZ = CoordConvTrans().geoLatLonEHgt2XYZConv(np.array([[geodlatdeg, londeg, eHgt]])); x, y, z = XYZ[0,0], XYZ[0,1], XYZ[0,2]
-				E = np.sqrt(self.a**2 - self.b**2)
+				XYZ = CoordConvTrans().geoLatLonEHgt2XYZConv(np.array([[geodlatdeg, londeg, eHgt]]), aELL=self.aELL, fELL=self.fELL); x, y, z = XYZ[0,0], XYZ[0,1], XYZ[0,2]
+				E = np.sqrt(self.aELL**2 - self.bELL**2)
 				tmp = x**2 + y**2 + z**2 - E**2; u = np.sqrt(1/2*tmp*(1 + np.sqrt(1 + 4*E**2*z**2/tmp**2)))
 				beta = np.arctan((z * np.sqrt(u**2 + E**2))/(u * np.sqrt(x**2 + y**2)))
 				w = np.sqrt((u**2 + E**2*np.sin(beta)**2)/(u**2 + E**2))
 				q = 1/2*((1 + 3*u**2/E**2)*np.arctan(E/u) - 3*u/E)
-				q0 = 1/2*((1+3*self.b**2/E**2)*np.arctan(E/self.b)-3*self.b/E)				
+				q0 = 1/2*((1+3*self.bELL**2/E**2)*np.arctan(E/self.bELL)-3*self.bELL/E)
 				q_prime = 3*(1 + u**2/E**2)*(1 - u/E*np.arctan(E/u)) - 1
-				gamma_beta = (self.omega**2*self.a**2/np.sqrt(u**2 + E**2)*q/q0 - self.omega**2*np.sqrt(u**2+E**2)) * (1/w * np.sin(beta) * np.cos(beta))
-				gamma_u    = -1/w * (self.GM/(u**2+E**2) + self.omega**2*self.a**2*E/(u**2+E**2)*q_prime/q0*(1/2*np.sin(beta)**2-1/6) - self.omega**2*u*np.cos(beta)**2)
+				gamma_beta = (self.omgELL**2*self.aELL**2/np.sqrt(u**2 + E**2)*q/q0 - self.omgELL**2*np.sqrt(u**2+E**2)) * (1/w * np.sin(beta) * np.cos(beta))
+				gamma_u    = -1/w * (self.GMELL/(u**2+E**2) + self.omgELL**2*self.aELL**2*E/(u**2+E**2)*q_prime/q0*(1/2*np.sin(beta)**2-1/6) - self.omgELL**2*u*np.cos(beta)**2)
 				gamma_h    = np.sqrt(gamma_beta**2 + gamma_u**2)
 		return gamma_h # scalar in m/s2
 
@@ -287,20 +287,23 @@ class CoordConvTrans: # Class: Coordinate conversion and transformation with met
 										coLat is the angle from the Z axis to the line connecting the geocenter and the point. 
 										sLat is the spherical latitude, which can be computed as: sLat = pi/2-coLat.
 		"""
-		XYZ = self.geoLatLonEHgt2XYZConv(LatLonEHgt=geoLatLonEHgt, aEll=aELL, fEll=fELL) # np.array (N, 3)
+		XYZ = self.geoLatLonEHgt2XYZConv(LatLonEHgt=geoLatLonEHgt, aELL=aELL, fELL=fELL) # np.array (N, 3)
 		r = np.sqrt(XYZ[:, 0]**2 + XYZ[:, 1]**2 + XYZ[:, 2]**2)  # np.array (N, ): Geocentric radius: r = sqrt(X^2+Y^2+Z^2)
-		if output.upper() == 'SLAT': sLat = np.rad2deg(np.arcsin(XYZ[:, 2]/r))  # np.array (N, ); spherical latitudes in degrees: sLat = asin(Z/r) = atan(Z/sqrt(X^2+Y^2)) = 90 - coLat
-		else: coLat = np.rad2deg(np.arccos(XYZ[:, 2]/r)) # np.array (N, ); colatitudes in degrees: coLat = acos(Z/r) = atan(sqrt(X^2+Y^2)/Z) = 90 - sLat
-		return np.column_stack((sLat, geoLatLonEHgt[:, 1], r)) if output.upper() == 'SLAT' else np.column_stack((coLat, geoLatLonEHgt[:, 1], r)) # np.array (N, 3)
-	def geoLatLonEHgt2XYZConv     (self, LatLonEHgt: np.ndarray, aEll: float, fEll: float): # Conversion of geodetic coordinates Lat/Lon/EllHgt to cartesian coordinates X/Y/Z
+		if output.upper() == 'SLAT':
+			sLat = np.rad2deg(np.arcsin(XYZ[:, 2]/r))  # np.array (N, ); spherical latitudes in degrees: sLat = asin(Z/r) = atan(Z/sqrt(X^2+Y^2)) = 90 - coLat
+			return np.column_stack((sLat, geoLatLonEHgt[:, 1], r)) # np.array (N, 3)
+		else:
+			coLat = np.rad2deg(np.arccos(XYZ[:, 2]/r)) # np.array (N, ); colatitudes in degrees: coLat = acos(Z/r) = atan(sqrt(X^2+Y^2)/Z) = 90 - sLat
+			return np.column_stack((coLat, geoLatLonEHgt[:, 1], r)) # np.array (N, 3)
+	def geoLatLonEHgt2XYZConv     (self, LatLonEHgt: np.ndarray, aELL: float, fELL: float): # Conversion of geodetic coordinates Lat/Lon/EllHgt to cartesian coordinates X/Y/Z
 		"""
 		Parameters:
 			LatLonEHgt (ndarray): Array (N, 3) of Latitude/Longitude/Ellipsoidal Height values. Lat/Lon in degrees
 		Returns:
 			XYZ (ndarray)		: Array (N, 3) of cartesian coordinates X/Y/Z
 		"""
-		e2 = 2*fEll-fEll**2
-		N = aEll/np.sqrt((1-e2*np.sin(np.radians(LatLonEHgt[:, 0]))**2)) # np.array (N, )
+		e2 = 2*fELL-fELL**2
+		N = aELL/np.sqrt((1-e2*np.sin(np.radians(LatLonEHgt[:, 0]))**2)) # np.array (N, )
 		X = (N+LatLonEHgt[:, 2])*np.cos(np.radians(LatLonEHgt[:, 0]))*np.cos(np.radians(LatLonEHgt[:, 1])) # np.array (N, )
 		Y = (N+LatLonEHgt[:, 2])*np.cos(np.radians(LatLonEHgt[:, 0]))*np.sin(np.radians(LatLonEHgt[:, 1])) # np.array (N, )
 		Z = ((1-e2)*N+LatLonEHgt[:, 2])*np.sin(np.radians(LatLonEHgt[:, 0])) # np.array (N, )'''
@@ -330,6 +333,8 @@ if __name__ == '__main__':
 	invf   = config.getfloat('ELLIPSOID', 'invf', fallback=298.257223563); fELL  = 1/invf
 	GMELL  = float(config['ELLIPSOID']['GM'])
 	omgELL = float(config['ELLIPSOID']['omega'])
+	geELL  = float(config['ELLIPSOID']['ge'])
+	gpELL  = float(config['ELLIPSOID']['gp'])
 	aGGM  = config.getfloat('GGM', 'a', fallback=6378137.0)
 	GMGGM = float(config['GGM']['GM'])
 	skrwsGGM    = [ii for ii in range(config.getint('GGM', 'skiprows', fallback=0))]
@@ -354,8 +359,9 @@ if __name__ == '__main__':
 	degGGM = min(degGGM, max([item[0] for item in list(HarCoefDict.keys())]))	
 	print(f'\n-- Zeta/Undulation will be computed up to degree: {degGGM}')
 	print(f' - Compute Height Anomalies (Zeta)/Geoid Undulation (UND).')	
-	if nprocs > 1: ZetaUnd, _ = GEOID(aELL=aELL, fELL=fELL, aGGM=aGGM, GMGGM=GMGGM).ZetaUndHarCoef_starmap2Async(geoLatLonEHgt=LatLonEHgt, HarCoef=HarCoefDict, HarCoefZeta2N=HarCoefZeta2NDict, maxdeg=degGGM, ZeroDegZeta=0, output=output, verbose=True, nprocs=nprocs)
-	else: ZetaUnd, _ = GEOID(aELL=aELL, fELL=fELL, aGGM=aGGM, GMGGM=GMGGM).ZetaUndHarCoef              (geoLatLonEHgt=LatLonEHgt, HarCoef=HarCoefDict, HarCoefZeta2N=HarCoefZeta2NDict, maxdeg=degGGM, ZeroDegZeta=0, output=output, verbose=True)
+	LatLonEHgt = LatLonEHgt[:20, :]
+	if nprocs > 1: ZetaUnd, _ = GEOID(aELL=aELL, fELL=fELL, omgELL=omgELL, GMELL=GMELL, geELL=geELL, gpELL=gpELL, aGGM=aGGM, GMGGM=GMGGM).ZetaUndHarCoef_starmap2Async(geoLatLonEHgt=LatLonEHgt, HarCoef=HarCoefDict, HarCoefZeta2N=HarCoefZeta2NDict, maxdeg=degGGM, ZeroDegZeta=0, output=output, verbose=True, nprocs=nprocs)
+	else:          ZetaUnd, _ = GEOID(aELL=aELL, fELL=fELL, omgELL=omgELL, GMELL=GMELL, geELL=geELL, gpELL=gpELL, aGGM=aGGM, GMGGM=GMGGM).ZetaUndHarCoef              (geoLatLonEHgt=LatLonEHgt, HarCoef=HarCoefDict, HarCoefZeta2N=HarCoefZeta2NDict, maxdeg=degGGM, ZeroDegZeta=0, output=output, verbose=True)
 	xlsxData = np.column_stack((LatLonEHgt[:, :2], ZetaUnd))
 	dataheader = ['LAT (deg)', 'LON (deg)', 'ZETA (m)'] if output == 'ZETA' else ['LAT (deg)', 'LON (deg)', 'UND (m)']
 	DATA().toXLSX(data=xlsxData, datasheetname='Sheet1', dataheader=dataheader, dataindex=True, xlsxfile=oupfile)

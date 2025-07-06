@@ -4,7 +4,7 @@ This Python tool computes height anomaly (ζ, ZETA) or geoid undulation (N, UND)
 
 By default, the tool computes ZETA. If Zeta-to-N conversion coefficients are supplied, it will also derive UND (geoid undulation).
 
-Several high-degree GGM models are listed below as examples for reference and can be downloaded from:
+Several high-degree GGM models are listed below as examples for reference and can be downloaded from 
 🔗 https://icgem.gfz-potsdam.de/tom_longtime
 
 - EGM2008 (The Earth Gravitational Model 2008) developed and released by the National Geospatial-Intelligence Agency (NGA) 🔗 https://doi.org/10.1029/2011JB008916
@@ -18,20 +18,42 @@ Several high-degree GGM models are listed below as examples for reference and ca
 - multiprocessing 🔗 https://docs.python.org/3/library/multiprocessing.html
 
 ## Usages
-1. Edit the cofiguration in sample_data/config.cfg corresponding to your own data (latitude/longitude) and GGM model.
-2. Run the script with either one of the options sequential/serial or parallel (multiprocessing).
+1. Edit the configuration file located at sample_data/config.cfg to match your own data (latitude/longitude file) and the desired GGM model.
+2. Run the script using one of the available execution modes: sequential (a.k.a. serial) or parallel (i.e., multiprocessing).
 
-Call the below command line for help!
+Use the command below to display help information:
+
+🪟 On Windows using PowerShell or Command Prompt:
+```bash
+python.exe GGMZetaUnd.py -h
+```
+
+🐧 On Linux using the terminal:
 ```bash
 python GGMZetaUnd.py -h
 ```
-To run with the sequential/serial option use a command line below as an example
+
+To call the script in the sequential (serial) mode, use the following example command:
+
+🪟 On Windows using PowerShell or Command Prompt.
 ```bash
-python .\GGMZetaUnd.py -ggm .\sample_data\eigen-6c4.gfc -i .\sample_data\LatLon.txt -o .\sample_data\ZetaUnd.xlsx -c .\sample_data\config.cfg
+python.exe GGMZetaUnd.py -ggm sample_data\eigen-6c4.gfc -i sample_data\LatLon.txt -o sample_data\ZetaUnd.xlsx -c sample_data\config.cfg
 ```
-To run with the parallel option use a command line below with 4 CPU cores/threats used as an example
+
+🐧 On Linux using the terminal:
 ```bash
-python .\GGMZetaUnd.py -ggm .\sample_data\eigen-6c4.gfc -i .\sample_data\LatLon.txt -o .\sample_data\ZetaUnd.xlsx -c .\sample_data\config.cfg -n 4
+python GGMZetaUnd.py --ggm sample_data/eigen-6c4.gfc --i sample_data/LatLon.txt --o sample_data/ZetaUnd.xlsx --cfg sample_data/config.cfg
+```
+To call the script in the parallel (multiprocessing) mode, use the following example command:
+
+🪟 On Windows using PowerShell or Command Prompt.
+```bash
+python.exe GGMZetaUnd.py -ggm sample_data\eigen-6c4.gfc -i sample_data\LatLon.txt -o sample_data\ZetaUnd.xlsx -c sample_data\config.cfg -n 4
+```
+
+🐧 On Linux using the terminal:
+```bash
+python GGMZetaUnd.py --ggm sample_data/eigen-6c4.gfc --i sample_data/LatLon.txt --o sample_data/ZetaUnd.xlsx --cfg sample_data/config.cfg -n 4
 ```
 
 ## Author
